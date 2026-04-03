@@ -6,7 +6,7 @@ let startX;
 let scrollLeft;
 
 // ---------------------------
-// Drag
+// Drag / Touch
 // ---------------------------
 const startDrag = (x) => {
     isDown = true;
@@ -27,34 +27,46 @@ const stopDrag = () => {
 };
 
 // ---------------------------
-// Loop infinito via clonagem (apenas para buffer visual)
+// Loop infinito (clones mínimos)
 // ---------------------------
 function setupInfiniteCarousel() {
-    photos.forEach(photo => {
-        const cloneStart = photo.cloneNode(true);
-        const cloneEnd = photo.cloneNode(true);
-        photosContainer.prepend(cloneStart); // adiciona clones no início
-        photosContainer.appendChild(cloneEnd); // adiciona clones no final
-    });
+    const clonesStart = photos.slice(-2).map(p => p.cloneNode(true));
+    const clonesEnd = photos.slice(0, 2).map(p => p.cloneNode(true));
 
-    // Ajusta scroll inicial para o conteúdo original no meio
+    clonesStart.forEach(c => photosContainer.prepend(c));
+    clonesEnd.forEach(c => photosContainer.appendChild(c));
+
+    // Ajusta scroll inicial para o conteúdo original
     const totalOriginalWidth = photosContainer.scrollWidth / 3;
     slider.scrollLeft = totalOriginalWidth;
 }
 
 // ---------------------------
-// Escala dinâmica
+// Pré-calcula centros das fotos
 // ---------------------------
-function updateScale() {
-    const photosAll = Array.from(photosContainer.querySelectorAll('.photo'));
+const photoCenters = photos.map(photo => photo.offsetLeft + photo.offsetWidth / 2);
+
+function updateScaleFast() {
     const sliderCenter = slider.scrollLeft + slider.clientWidth / 2;
-    photosAll.forEach(photo => {
-        const photoLeft = photo.offsetLeft;
-        const photoCenter = photoLeft + photo.offsetWidth / 2;
-        const distance = Math.abs(sliderCenter - photoCenter);
+    photos.forEach((photo, i) => {
+        const distance = Math.abs(sliderCenter - photoCenters[i]);
         const scale = Math.max(1, 1.2 - distance / 400);
         photo.style.transform = `scale(${scale})`;
     });
+}
+
+// ---------------------------
+// Atualização via requestAnimationFrame
+// ---------------------------
+let ticking = false;
+function onScrollOrMove() {
+    if (!ticking) {
+        window.requestAnimationFrame(() => {
+            updateScaleFast();
+            ticking = false;
+        });
+        ticking = true;
+    }
 }
 
 // ---------------------------
@@ -63,7 +75,7 @@ function updateScale() {
 slider.addEventListener('mousedown', e => startDrag(e.clientX));
 slider.addEventListener('mousemove', e => {
     moveDrag(e.clientX);
-    updateScale();
+    onScrollOrMove();
 });
 slider.addEventListener('mouseup', stopDrag);
 slider.addEventListener('mouseleave', stopDrag);
@@ -74,7 +86,7 @@ slider.addEventListener('mouseleave', stopDrag);
 slider.addEventListener('touchstart', e => startDrag(e.touches[0].clientX));
 slider.addEventListener('touchmove', e => {
     moveDrag(e.touches[0].clientX);
-    updateScale();
+    onScrollOrMove();
     e.preventDefault();
 }, { passive: false });
 slider.addEventListener('touchend', stopDrag);
@@ -89,5 +101,5 @@ slider.addEventListener('dragstart', e => e.preventDefault());
 // ---------------------------
 window.addEventListener('load', () => {
     setupInfiniteCarousel();
-    setInterval(updateScale, 50); // atualiza escala continuamente
+    updateScaleFast(); // primeira atualização
 });

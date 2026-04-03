@@ -47,6 +47,7 @@ body {
     position: fixed;
     top: 50%;
     height: 100vh;
+    z-index: 99;
     background-color: transparent;
     background: #00000085;
     backdrop-filter: blur(10px);
@@ -116,6 +117,7 @@ body {
     cursor: grab;
     width: 100%;
     padding: 30px 2rem;
+    scroll-behavior: smooth;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
 }
